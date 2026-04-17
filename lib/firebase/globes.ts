@@ -40,7 +40,7 @@ export async function createGlobe(ownerId: string, name = "Untitled Globe"): Pro
     behaviour: { ...DEFAULT_BEHAVIOUR },
     pinStyle: { ...DEFAULT_PIN_STYLE },
     metadata: { ...DEFAULT_METADATA },
-    isPublished: true,
+    isPublished: false,
   };
   await setDoc(doc(globesCol(), id), {
     ...data,

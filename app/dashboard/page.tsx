@@ -17,6 +17,7 @@ import {
 } from "@/lib/firebase/globes";
 import { signOut } from "@/lib/firebase/auth";
 import { FREE_TIER_GLOBE_LIMIT } from "@/lib/defaults";
+import { buildEditorRoute } from "@/lib/globe-routes";
 import type { Globe } from "@/lib/types";
 
 export default function DashboardPage() {
@@ -70,7 +71,7 @@ function Dashboard() {
     setCreating(true);
     try {
       const id = await createGlobe(user.uid);
-      router.push(`/edit/${id}`);
+      router.push(buildEditorRoute(id));
     } finally {
       setCreating(false);
     }
@@ -101,7 +102,7 @@ function Dashboard() {
         pinStyle: source.pinStyle,
         metadata: source.metadata,
       });
-      router.push(`/edit/${newId}`);
+      router.push(buildEditorRoute(newId));
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Duplicate failed");
     }

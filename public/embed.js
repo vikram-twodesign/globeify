@@ -4,7 +4,7 @@
     if (script.dataset.loaded) return;
     script.dataset.loaded = 'true';
     var globeId = script.dataset.globe;
-    if (!globeId) return;
+    if (!globeId || !/^[A-Za-z0-9_-]{4,32}$/.test(globeId)) return;
     var container =
       document.getElementById('globeify-' + globeId) || script.parentElement;
     if (!container) return;

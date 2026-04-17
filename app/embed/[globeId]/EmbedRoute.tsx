@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Globe } from "@/components/globe/Globe";
 import { subscribeToGlobe, subscribeToPins } from "@/lib/firebase/globes";
+import { extractGlobeIdFromRoute } from "@/lib/globe-routes";
 import { getThemeColors } from "@/lib/themes";
+import { sanitizeExternalUrl } from "@/lib/url";
 import {
   DEFAULT_BEHAVIOUR,
   DEFAULT_PIN_STYLE,
@@ -12,20 +14,19 @@ import {
 } from "@/lib/defaults";
 import type { Globe as GlobeDoc, Pin } from "@/lib/types";
 
-const PLACEHOLDER = "_placeholder_";
 // TODO(branding): hide credit when globe.branding === false on paid tier.
 const MARKETING_URL = "https://globeify.web.app";
 
-function extractGlobeId(pathname: string | null): string | null {
-  if (!pathname) return null;
-  const match = pathname.match(/^\/embed\/([^/]+)\/?$/);
-  return match ? match[1] : null;
-}
-
 export default function EmbedRoute() {
   const pathname = usePathname();
-  const globeId = extractGlobeId(pathname);
-  const isPlaceholder = !globeId || globeId === PLACEHOLDER;
+  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null);
+
+  useEffect(() => {
+    setSearchParams(new URLSearchParams(window.location.search));
+  }, []);
+
+  const globeId = extractGlobeIdFromRoute("embed", pathname, searchParams);
+  const isPlaceholder = !globeId;
 
   const [globe, setGlobe] = useState<GlobeDoc | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
@@ -35,6 +36,8 @@ export default function EmbedRoute() {
   );
 
   // Subscribe to globe + pins.
+  // Pins subscription only opens once the globe is confirmed published,
+  // avoiding a permission-denied error on unpublished globes.
   useEffect(() => {
     if (isPlaceholder) return;
 
@@ -52,20 +55,17 @@ export default function EmbedRoute() {
         }
         setGlobe(g);
         setStatus("ok");
+        if (!unsubPins) {
+          unsubPins = subscribeToPins(
+            globeId,
+            (p) => { if (!cancelled) setPins(p); },
+            () => {}
+          );
+        }
       },
       () => {
         if (cancelled) return;
         setStatus("error");
-      }
-    );
-
-    unsubPins = subscribeToPins(
-      globeId,
-      (p) => {
-        if (!cancelled) setPins(p);
-      },
-      () => {
-        // Pins failing alone shouldn't hide the globe — just log silently.
       }
     );
 
@@ -185,6 +185,7 @@ function PinDetailCard({
   colors: { background: string; land: string; border: string; pin: string };
   onClose: () => void;
 }) {
+  const safeUrl = sanitizeExternalUrl(pin.url);
   // Derive a card background that sits just above the globe background by
   // using the land colour — this keeps the card on-theme for light/dark.
   const isDark = isColorDark(colors.background);
@@ -242,7 +243,7 @@ function PinDetailCard({
         style={{
           fontSize: 11,
           color: mutedColor,
-          marginBottom: pin.description || pin.url ? 8 : 0,
+          marginBottom: pin.description || safeUrl ? 8 : 0,
           fontFamily: "var(--font-jetbrains-mono), ui-monospace, monospace",
         }}
       >
@@ -261,9 +262,9 @@ function PinDetailCard({
           {pin.description}
         </div>
       )}
-      {pin.url && (
+      {safeUrl && (
         <a
-          href={pin.url}
+          href={safeUrl}
           target="_blank"
           rel="noopener noreferrer"
           style={{

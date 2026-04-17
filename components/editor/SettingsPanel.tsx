@@ -24,6 +24,7 @@ type GlobeLike = {
   behaviour: GlobeBehaviour;
   pinStyle: PinStyle;
   metadata: GlobeMetadata;
+  isPublished: boolean;
 };
 
 interface SettingsPanelProps {
@@ -194,6 +195,11 @@ export function SettingsPanel({ globe, onChange }: SettingsPanelProps) {
       </Section>
 
       <Section title="Metadata">
+        <ToggleRow
+          label="Published publicly"
+          value={globe.isPublished}
+          onChange={(v) => onChange({ isPublished: v })}
+        />
         <div className="flex flex-col gap-1.5">
           <Label>Title (embed SEO)</Label>
           <Input

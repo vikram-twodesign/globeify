@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Pin, PinInput } from "@/lib/types";
+import { sanitizeExternalUrl } from "@/lib/url";
 import { cn } from "@/lib/utils";
 import { debounce } from "@/lib/debounce";
 import { searchGeocode, type GeocodeResult } from "@/lib/geocode";
@@ -193,6 +194,11 @@ function AddPinForm({ nextSortOrder, onSubmit }: AddPinFormProps) {
       setError("Longitude must be between -180 and 180");
       return;
     }
+    const safeUrl = sanitizeExternalUrl(url);
+    if (url.trim() && !safeUrl) {
+      setError("URL must start with http:// or https://");
+      return;
+    }
     setSubmitting(true);
     try {
       await onSubmit({
@@ -200,7 +206,7 @@ function AddPinForm({ nextSortOrder, onSubmit }: AddPinFormProps) {
         lat: latNum,
         lng: lngNum,
         description: description.trim() ? description.trim() : null,
-        url: url.trim() ? url.trim() : null,
+        url: safeUrl,
         sortOrder: nextSortOrder,
       });
       setName("");
@@ -465,6 +471,11 @@ function EditPinForm({ pin, onUpdate }: EditPinFormProps) {
       setError("Longitude must be between -180 and 180");
       return;
     }
+    const safeUrl = sanitizeExternalUrl(url);
+    if (url.trim() && !safeUrl) {
+      setError("URL must start with http:// or https://");
+      return;
+    }
     setSaving(true);
     try {
       await onUpdate({
@@ -472,7 +483,7 @@ function EditPinForm({ pin, onUpdate }: EditPinFormProps) {
         lat: latNum,
         lng: lngNum,
         description: description.trim() ? description.trim() : null,
-        url: url.trim() ? url.trim() : null,
+        url: safeUrl,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");

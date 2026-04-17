@@ -6,22 +6,24 @@ import { usePathname } from "next/navigation";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getGlobe, listPins } from "@/lib/firebase/globes";
+import {
+  buildEditorRoute,
+  extractGlobeIdFromRoute,
+} from "@/lib/globe-routes";
 import { buildStandaloneHtml } from "@/lib/standalone-html";
 import type { Globe, Pin } from "@/lib/types";
 
-const PLACEHOLDER = "_placeholder_";
-
-function extractGlobeId(pathname: string | null): string | null {
-  if (!pathname) return null;
-  const match = pathname.match(/^\/download\/([^/]+)\/?$/);
-  return match ? match[1] : null;
-}
-
 export default function DownloadRoute() {
   const pathname = usePathname();
-  const globeId = extractGlobeId(pathname);
+  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null);
 
-  if (!globeId || globeId === PLACEHOLDER) {
+  useEffect(() => {
+    setSearchParams(new URLSearchParams(window.location.search));
+  }, []);
+
+  const globeId = extractGlobeIdFromRoute("download", pathname, searchParams);
+
+  if (!globeId) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
         Loading…
@@ -180,7 +182,7 @@ function DownloadBody({ globeId }: { globeId: string }) {
             Download again
           </button>
           <Link
-            href={`/edit/${state.globe.id}`}
+            href={buildEditorRoute(state.globe.id)}
             className="text-sm text-muted-foreground underline-offset-4 hover:underline"
           >
             ← Back to editor

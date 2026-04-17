@@ -31,9 +31,11 @@ function ensureEmulator(): void {
   connected = true;
 }
 
+
 /**
  * Search for a place via the `geocode` callable (proxies Nominatim).
  * Debouncing is the caller's responsibility.
+ * Throws on failure — callers should show a "Search unavailable" state.
  */
 export async function searchGeocode(query: string): Promise<GeocodeResult[]> {
   const q = query.trim();

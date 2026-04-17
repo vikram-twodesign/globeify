@@ -15,6 +15,7 @@ import {
   updatePin,
 } from "@/lib/firebase/globes";
 import { debounce } from "@/lib/debounce";
+import { buildEmbedAppRoute } from "@/lib/globe-routes";
 import type {
   Globe as GlobeType,
   GlobeInput,
@@ -49,6 +50,7 @@ export function Editor({ globeId }: EditorProps) {
   const [embedOpen, setEmbedOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const dirtyRef = useRef(false);
+  const pendingPatchRef = useRef<Partial<GlobeInput>>({});
 
   // Subscribe to globe doc.
   useEffect(() => {
@@ -89,10 +91,14 @@ export function Editor({ globeId }: EditorProps) {
     return () => unsub();
   }, [globeId, user, state.kind]);
 
-  // Debounced saver keyed to the current globe id.
+  // Debounced saver — accumulates patches in a ref so rapid changes to
+  // different fields aren't dropped when the debounce timer fires.
   const flushSave = useMemo(
     () =>
-      debounce((patch: Partial<GlobeInput>) => {
+      debounce(() => {
+        const patch = { ...pendingPatchRef.current };
+        if (Object.keys(patch).length === 0) return;
+        pendingPatchRef.current = {};
         setSaveStatus("saving");
         updateGlobe(globeId, patch)
           .then(() => {
@@ -115,7 +121,8 @@ export function Editor({ globeId }: EditorProps) {
       setLocalGlobe((prev) => (prev ? { ...prev, ...patch } : prev));
       dirtyRef.current = true;
       setSaveStatus("saving");
-      flushSave(patch);
+      pendingPatchRef.current = { ...pendingPatchRef.current, ...patch };
+      flushSave();
     },
     [flushSave]
   );
@@ -216,7 +223,7 @@ export function Editor({ globeId }: EditorProps) {
           Embed
         </Button>
         <a
-          href={`/embed/${globeId}`}
+          href={buildEmbedAppRoute(globeId)}
           target="_blank"
           rel="noopener"
           className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-transparent px-3 text-xs text-foreground transition-colors hover:border-ring hover:bg-secondary"

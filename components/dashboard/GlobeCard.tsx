@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { buildEditorRoute } from "@/lib/globe-routes";
 import { cn } from "@/lib/utils";
 import type { Globe } from "@/lib/types";
 
@@ -23,12 +24,13 @@ export function GlobeCard({
   onCopyEmbed,
 }: GlobeCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const updated = toRelativeDate(globe.updatedAt);
 
   return (
     <div className="group relative">
       <Link
-        href={`/edit/${globe.id}`}
+        href={buildEditorRoute(globe.id)}
         className="block rounded-lg border border-border bg-card transition-colors hover:border-ring focus-visible:outline-none focus-visible:border-ring"
       >
         <div
@@ -74,7 +76,7 @@ export function GlobeCard({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            setMenuOpen((v) => !v);
+            setMenuOpen((v) => { if (v) setConfirmDelete(false); return !v; });
           }}
           aria-label="Actions"
         >
@@ -88,23 +90,11 @@ export function GlobeCard({
             {[
               { label: "Copy embed", action: () => onCopyEmbed(globe.id) },
               { label: "Duplicate", action: () => onDuplicate(globe.id) },
-              {
-                label: "Delete",
-                action: () => {
-                  if (confirm(`Delete "${globe.name}"? This can't be undone.`)) {
-                    onDelete(globe.id);
-                  }
-                },
-                danger: true,
-              },
             ].map((item) => (
               <button
                 key={item.label}
                 type="button"
-                className={cn(
-                  "block w-full px-3 py-2 text-left text-xs transition-colors hover:bg-secondary",
-                  item.danger ? "text-destructive" : "text-foreground"
-                )}
+                className="block w-full px-3 py-2 text-left text-xs transition-colors hover:bg-secondary text-foreground"
                 onClick={() => {
                   setMenuOpen(false);
                   item.action();
@@ -113,6 +103,34 @@ export function GlobeCard({
                 {item.label}
               </button>
             ))}
+            <button
+              type="button"
+              className="block w-full px-3 py-2 text-left text-xs transition-colors hover:bg-secondary text-destructive"
+              onClick={() => setConfirmDelete(true)}
+            >
+              Delete
+            </button>
+            {confirmDelete ? (
+              <div className="border-t border-border px-3 py-2">
+                <p className="mb-2 text-[11px] text-muted-foreground">Delete "{globe.name}"?</p>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    className="flex-1 rounded bg-destructive px-2 py-1 text-[11px] text-white transition-opacity hover:opacity-80"
+                    onClick={() => { setConfirmDelete(false); setMenuOpen(false); onDelete(globe.id); }}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 rounded border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-secondary"
+                    onClick={() => setConfirmDelete(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

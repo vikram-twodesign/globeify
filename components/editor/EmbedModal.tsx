@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  buildDownloadRoute,
+  buildEmbedPublicRoute,
+} from "@/lib/globe-routes";
 import { cn } from "@/lib/utils";
 
 interface EmbedModalProps {
@@ -37,7 +41,7 @@ export function EmbedModal({ open, onClose, globeId }: EmbedModalProps) {
   if (!open) return null;
 
   const scriptSnippet = `<div id="globeify-${globeId}"></div>\n<script src="${origin}/embed.js" data-globe="${globeId}" async></script>`;
-  const iframeSnippet = `<iframe src="${origin}/embed/${globeId}" width="100%" height="600" frameborder="0" style="border-radius:8px;"></iframe>`;
+  const iframeSnippet = `<iframe src="${origin}${buildEmbedPublicRoute(globeId)}" width="100%" height="600" frameborder="0" style="border-radius:8px;"></iframe>`;
   const snippet =
     tab === "script"
       ? scriptSnippet
@@ -137,7 +141,7 @@ export function EmbedModal({ open, onClose, globeId }: EmbedModalProps) {
                 updates when you edit the globe.
               </p>
               <a
-                href={`/download/${globeId}`}
+                href={buildDownloadRoute(globeId)}
                 target="_blank"
                 rel="noopener"
                 className="inline-flex items-center justify-center gap-2 self-start rounded-md border border-border bg-transparent px-4 py-2 text-sm text-foreground transition-colors hover:border-ring hover:bg-secondary"

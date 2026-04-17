@@ -1,4 +1,5 @@
 import type { Globe, Pin } from "./types";
+import { sanitizeExternalUrl } from "./url";
 
 // Keep in sync with components/globe/globeCore.ts
 const PIN_SIZE_MULTIPLIERS = { small: 0.7, medium: 1, large: 1.4 } as const;
@@ -12,6 +13,19 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+// Validate hex/rgb color values before embedding in <style> blocks.
+function safeCssColor(s: string): string {
+  if (/^#[0-9a-fA-F]{3,8}$/.test(s.trim()) || /^rgba?\([\d\s,.%]+\)$/.test(s.trim())) {
+    return s.trim();
+  }
+  return "#000000";
+}
+
+// Validate URLs to allow only http/https — blocks javascript: and other schemes.
+function safeUrl(s: string): string {
+  return sanitizeExternalUrl(s) ?? "";
 }
 
 // Safe JSON embed inside <script>: close-tag sequences must not appear raw.
@@ -29,7 +43,12 @@ function safeJson(value: unknown): string {
  * raw HTML injection). Theme colours, behaviour, and pin style are baked in.
  */
 export function buildStandaloneHtml(globe: Globe, pins: Pin[]): string {
-  const colors = globe.themeColors;
+  const colors = {
+    background: safeCssColor(globe.themeColors.background),
+    land: safeCssColor(globe.themeColors.land),
+    border: safeCssColor(globe.themeColors.border),
+    pin: safeCssColor(globe.themeColors.pin),
+  };
   const behaviour = globe.behaviour;
   const pinStyle = globe.pinStyle;
 
@@ -42,7 +61,7 @@ export function buildStandaloneHtml(globe: Globe, pins: Pin[]): string {
     lat: p.lat,
     lng: p.lng,
     description: p.description ?? "",
-    url: p.url ?? "",
+    url: safeUrl(p.url ?? ""),
   }));
 
   const titleRaw = globe.metadata?.title || globe.name || "Globe";
