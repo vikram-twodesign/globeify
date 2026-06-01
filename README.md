@@ -260,4 +260,4 @@ Globes and their pins are readable by the public only when `isPublished = true`.
 
 ## Licence
 
-Private repository — all rights reserved.
+MIT Licence.
